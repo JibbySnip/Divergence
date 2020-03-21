@@ -4,8 +4,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.function.Function;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 
 public class GuiDelegator extends JFrame{
@@ -13,33 +16,47 @@ public class GuiDelegator extends JFrame{
     int screen_y = 450;
     Font dungeonFont;
     boolean initWSplash;
+    private final Logger logger = Logger.getLogger(this.getName());
+    SplashDemo splashScreen;
     private enum status{
+        STARTUP,
         INIT_GUI,
         INIT_SPLASH_SCREEN,
+        RUN_SPLASH_SCREEN,
         HOME_SCREEN,
-        WAIT
     }
-    status currStatus;
+    status currStatus = status.STARTUP;
 
-    public void setCurrStatus(status newStatus) {
+    private void setCurrStatus(status newStatus) {
+        logger.info("Moved state from " + this.currStatus.name() + " to " + newStatus.name());
         this.currStatus = newStatus;
-        System.out.println(newStatus.name());
+
     }
 
     public void reload(){
         switch (currStatus) {
+            case STARTUP:
+                setCurrStatus(status.INIT_GUI);
             case INIT_GUI:
+                initLog();
                 initDungeonFont();
                 initUI();
-                setCurrStatus(status.INIT_SPLASH_SCREEN);
+                initPanels();
+                setCurrStatus(initWSplash ? status.INIT_SPLASH_SCREEN : status.HOME_SCREEN);
+                logger.info("GUI Initialization complete");
             case INIT_SPLASH_SCREEN:
-                splashDemo.start();
-                setCurrStatus(status.WAIT);
+                add(splashScreen);
+                splashScreen.startPBar();
+                setCurrStatus(status.RUN_SPLASH_SCREEN);
+            case RUN_SPLASH_SCREEN:
+                logger.info("Running splash screen. loadComplete is " + splashScreen.loadComplete);
+                if (splashScreen.loadComplete) {
+                    logger.info("Load complete. Switching to home screen...");
+                    setCurrStatus(status.HOME_SCREEN);
+                }
             case HOME_SCREEN:
-                System.out.println("Completed");
+                logger.info("Reached home screen. Finishing... ");
                 System.exit(0);
-            case WAIT:
-
         }
     }
 
@@ -53,75 +70,51 @@ public class GuiDelegator extends JFrame{
     }
 
     private void initDungeonFont(){
-        File fontFile = new File("res/dungeonFont.TTF");
         Font font;
         try {
-            font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+            font = Font.createFont(Font.TRUETYPE_FONT, new File("src/com/nerdSpace/GUI/res/dungeonFont.TTF"));
             font = font.deriveFont(Font.BOLD,30);
             GraphicsEnvironment ge =
                     GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(font);
         } catch (FontFormatException | IOException e) {
+            logger.warning("Could not initialize dungeonFont. Switching to Serif...");
             font = Font.decode("SERIF");
         }
         dungeonFont = font;
     }
 
-    public static GuiDelegator init(boolean initWithSplashScreen) {
-        return new GuiDelegator(initWithSplashScreen);
-    }
-
     private void initUI() {
         setSize(screen_x, screen_y);
-
         setTitle("Divergence");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
+    private void initLog() {
+        FileHandler fh;
+        SimpleDateFormat format = new SimpleDateFormat("M-d_HHmmss");
+
+        try {
+            fh = new FileHandler("src/com/nerdSpace/logs/AppLog_"
+                    + format.format(Calendar.getInstance().getTime()) + ".log");
+            fh.setFormatter(new SimpleFormatter());
+            logger.addHandler(fh);
+        } catch (IOException e) {
+
+        }
+    }
+
     public Font getDungeonFont() {
         return dungeonFont;
     }
 
-    private Thread splashDemo = new Thread() {
-        SplashDemo demo = new SplashDemo(GuiDelegator.this);
-        public void run() {
-            SwingUtilities.invokeLater(new Runnable() {  // inits the splash screen
-                @Override
-                public void run() {
-                    add(demo);
-                    demo.confirm();
-                    System.out.println("Stuff's happening");
-                }
-            });
-            for (int i=20; i>0; i=i-1) {
-                final int sec = i;
-                SwingUtilities.invokeLater(new Runnable() {  // runs the progress bar
-                    public void run() {
-                        demo.updateTimeLeft(sec);
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-
-
-                }
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    GuiDelegator.this.remove(demo);
-                    setCurrStatus(status.HOME_SCREEN);
-                }
-            });
-            System.out.println("I'm in a Thread!");
-
+    private void initPanels() {
+        if (initWSplash) {  // TODO Create a panel parent class
+            splashScreen = new SplashDemo(getDimensions(), getDungeonFont());
         }
-        };
     }
-
+}
 
 

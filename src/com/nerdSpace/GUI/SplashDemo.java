@@ -2,18 +2,22 @@ package com.nerdSpace.GUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SplashDemo extends JPanel{
-    int timeLeft;
-    GuiDelegator commander;
-    JLabel image=new JLabel(new ImageIcon("book.jpg"));
-    JLabel text=new JLabel("DIVERGENCE");
-    JProgressBar progressBar=new JProgressBar();
-    JLabel message=new JLabel();//Crating a JLabel for displaying the message
-    SplashDemo(GuiDelegator commander)
+    private int timeLeft;
+    private Font dungeonFont;
+    boolean loadComplete = false;
+    private JLabel image=new JLabel(new ImageIcon("book.jpg"));
+    private JLabel text=new JLabel("DIVERGENCE");
+    private JProgressBar progressBar=new JProgressBar();
+    private JLabel message=new JLabel();//Crating a JLabel for displaying the message
+    private Timer loadTimer = new Timer();
+    SplashDemo(Dimension dimensions, Font dungeonFont)
     {
-        this.commander = commander;
-        setSize(commander.getDimensions());
+        setSize(dimensions);
+        this.dungeonFont = dungeonFont;
         addImage();
         addText();
         addProgressBar();
@@ -27,7 +31,7 @@ public class SplashDemo extends JPanel{
     }
     public void addText()
     {
-        text.setFont(commander.getDungeonFont());
+        text.setFont(dungeonFont);
         text.setBounds(170,220,600,40);
         text.setForeground(Color.BLUE);
         add(text);
@@ -48,19 +52,26 @@ public class SplashDemo extends JPanel{
         progressBar.setValue(0);
         add(progressBar);
     }
-    public void updateTimeLeft(int time) {
-        timeLeft = time;
+    public void updateTimeLeft() {
+        timeLeft += 1;
         runningPBar();
     }
-    public void runningPBar(){
+    private void runningPBar(){
 
-        progressBar.setValue(timeLeft);//Setting value of Progress Bar
+        progressBar.setValue(timeLeft/20);//Setting value of Progress Bar
         message.setText("LOADING "+timeLeft+"%");//Setting text of the message JLabel
-
-
-
-        }
-    public void confirm(){
-        System.out.println("Confirmed start!");
     }
+    public void startPBar() {
+        loadTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                updateTimeLeft();
+            }
+        }, 1000, 20000);
+        loadTimer.schedule(new TimerTask() {
+            public void run() {
+                loadComplete = true;
+            }
+        }, 20000);
     }
+}
