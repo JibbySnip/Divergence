@@ -12,12 +12,14 @@ import java.util.logging.SimpleFormatter;
 
 
 public class GuiDelegator extends JFrame{
-    int screen_x = 500;
+    int screen_x = 728;
     int screen_y = 450;
-    Font dungeonFont;
+
+    public static Font dungeonFontLarge = initDungeonFont(64);
+    public static Font dungeonFontMedium = initDungeonFont(48);
     boolean initWSplash;
     private final Logger logger = Logger.getLogger(this.getName());
-    SplashDemo splashScreen;
+    LoadScreen splashScreen;
     private enum status{
         STARTUP,
         INIT_GUI,
@@ -37,26 +39,34 @@ public class GuiDelegator extends JFrame{
         switch (currStatus) {
             case STARTUP:
                 setCurrStatus(status.INIT_GUI);
+                break;
             case INIT_GUI:
                 initLog();
-                initDungeonFont();
-                initUI();
+                initFrame();
                 initPanels();
                 setCurrStatus(initWSplash ? status.INIT_SPLASH_SCREEN : status.HOME_SCREEN);
                 logger.info("GUI Initialization complete");
+                break;
             case INIT_SPLASH_SCREEN:
-                add(splashScreen);
-                splashScreen.startPBar();
+                setContentPane(splashScreen.getRootPanel());
+                validate();
                 setCurrStatus(status.RUN_SPLASH_SCREEN);
+                splashScreen.init();
+                break;
             case RUN_SPLASH_SCREEN:
-                logger.info("Running splash screen. loadComplete is " + splashScreen.loadComplete);
+//                logger.info("Running splash screen. loadComplete is " + splashScreen.loadComplete);
+
                 if (splashScreen.loadComplete) {
+                    System.out.println("W O A H");
                     logger.info("Load complete. Switching to home screen...");
                     setCurrStatus(status.HOME_SCREEN);
                 }
+                break;
             case HOME_SCREEN:
+                logger.info(currStatus.name());
                 logger.info("Reached home screen. Finishing... ");
                 System.exit(0);
+                break;
         }
     }
 
@@ -65,26 +75,21 @@ public class GuiDelegator extends JFrame{
         initWSplash = initWithSplashScreen;
     }
 
-    public Dimension getDimensions() {
-        return new Dimension(screen_x,screen_y);
-    }
-
-    private void initDungeonFont(){
+    private static Font initDungeonFont(int size){
         Font font;
         try {
             font = Font.createFont(Font.TRUETYPE_FONT, new File("src/com/nerdSpace/GUI/res/dungeonFont.TTF"));
-            font = font.deriveFont(Font.BOLD,30);
+            font = font.deriveFont(Font.BOLD, size);
             GraphicsEnvironment ge =
                     GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(font);
         } catch (FontFormatException | IOException e) {
-            logger.warning("Could not initialize dungeonFont. Switching to Serif...");
             font = Font.decode("SERIF");
         }
-        dungeonFont = font;
+        return font;
     }
 
-    private void initUI() {
+    private void initFrame() {
         setSize(screen_x, screen_y);
         setTitle("Divergence");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -97,7 +102,7 @@ public class GuiDelegator extends JFrame{
         SimpleDateFormat format = new SimpleDateFormat("M-d_HHmmss");
 
         try {
-            fh = new FileHandler("src/com/nerdSpace/logs/AppLog_"
+            fh = new FileHandler("src/com/nerdSpace/logs/DevLog_"
                     + format.format(Calendar.getInstance().getTime()) + ".log");
             fh.setFormatter(new SimpleFormatter());
             logger.addHandler(fh);
@@ -106,13 +111,9 @@ public class GuiDelegator extends JFrame{
         }
     }
 
-    public Font getDungeonFont() {
-        return dungeonFont;
-    }
-
     private void initPanels() {
-        if (initWSplash) {  // TODO Create a panel parent class
-            splashScreen = new SplashDemo(getDimensions(), getDungeonFont());
+        if (initWSplash) {
+            splashScreen = new LoadScreen();
         }
     }
 }
