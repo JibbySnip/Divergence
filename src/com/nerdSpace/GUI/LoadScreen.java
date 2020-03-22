@@ -3,6 +3,7 @@ package com.nerdSpace.GUI;
 import javax.swing.*;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LoadScreen {
     private JProgressBar progressBar;
@@ -11,8 +12,8 @@ public class LoadScreen {
     private JLabel subtitleLabel;
 
     private java.util.Timer loadTimer = new Timer();
-    public boolean loadComplete = false;
-    int loadTime = 5;
+    public AtomicBoolean loadComplete = new AtomicBoolean(false);
+    int loadTime = 10;
     int currTime = 0;
 
 
@@ -30,8 +31,14 @@ public class LoadScreen {
 
 
     private void runningPBar() {
-        currTime += 1;
-        progressBar.setValue(currTime * (100 / loadTime));//Setting value of Progress Bar
+        currTime++;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setValue(currTime * (100 / loadTime));//Setting value of Progress Bar
+                progressBar.setString((currTime * (100 / loadTime))+"%");
+            }
+        });
     }
 
     public void startPBar() {
@@ -42,12 +49,11 @@ public class LoadScreen {
             }
         }, 0, 1000);
         loadTimer.schedule(new TimerTask() {
-            public void run() {
-                loadComplete = true;
-                System.out.println(loadComplete);
+            public synchronized void run() {
+                loadComplete.set(true);
                 loadTimer.cancel();
             }
-        }, 1000 * loadTime);
+        }, 1000 * (loadTime-1));
     }
 
     public JPanel getRootPanel() {

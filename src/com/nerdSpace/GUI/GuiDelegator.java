@@ -15,8 +15,8 @@ public class GuiDelegator extends JFrame{
     int screen_x = 728;
     int screen_y = 450;
 
-    public static Font dungeonFontLarge = initDungeonFont(64);
-    public static Font dungeonFontMedium = initDungeonFont(48);
+    public static Font dungeonFontLarge = initDungeonFont(56);
+    public static Font dungeonFontMedium = initDungeonFont(32);
     boolean initWSplash;
     private final Logger logger = Logger.getLogger(this.getName());
     LoadScreen splashScreen;
@@ -56,8 +56,7 @@ public class GuiDelegator extends JFrame{
             case RUN_SPLASH_SCREEN:
 //                logger.info("Running splash screen. loadComplete is " + splashScreen.loadComplete);
 
-                if (splashScreen.loadComplete) {
-                    System.out.println("W O A H");
+                if (splashScreen.loadComplete.get()) {
                     logger.info("Load complete. Switching to home screen...");
                     setCurrStatus(status.HOME_SCREEN);
                 }
