@@ -17,15 +17,24 @@ public class GuiDelegator extends JFrame{
 
     public static Font dungeonFontLarge = initDungeonFont(56);
     public static Font dungeonFontMedium = initDungeonFont(32);
+    public static Font dungeonFontSmall = initDungeonFont(12);
     boolean initWSplash;
+    volatile boolean splashLoaded = false;
     private final Logger logger = Logger.getLogger(this.getName());
     LoadScreen splashScreen;
+    private boolean startGame = false;
+
     private enum status{
         STARTUP,
         INIT_GUI,
         INIT_SPLASH_SCREEN,
         RUN_SPLASH_SCREEN,
-        HOME_SCREEN,
+        INIT_HOME_SCREEN,
+        RUN_HOME_SCREEN,
+        SETTINGS,
+        GRAVEYARD,
+        UPDATING,
+        LOADING_GAME
     }
     status currStatus = status.STARTUP;
 
@@ -44,7 +53,7 @@ public class GuiDelegator extends JFrame{
                 initLog();
                 initFrame();
                 initPanels();
-                setCurrStatus(initWSplash ? status.INIT_SPLASH_SCREEN : status.HOME_SCREEN);
+                setCurrStatus(initWSplash ? status.INIT_SPLASH_SCREEN : status.INIT_HOME_SCREEN);
                 logger.info("GUI Initialization complete");
                 break;
             case INIT_SPLASH_SCREEN:
@@ -56,16 +65,20 @@ public class GuiDelegator extends JFrame{
             case RUN_SPLASH_SCREEN:
 //                logger.info("Running splash screen. loadComplete is " + splashScreen.loadComplete);
 
-                if (splashScreen.loadComplete.get()) {
+                if (splashLoaded) {
                     logger.info("Load complete. Switching to home screen...");
-                    setCurrStatus(status.HOME_SCREEN);
+                    setCurrStatus(status.INIT_HOME_SCREEN);
                 }
                 break;
-            case HOME_SCREEN:
-                logger.info(currStatus.name());
-                logger.info("Reached home screen. Finishing... ");
-                System.exit(0);
+            case INIT_HOME_SCREEN:
+                setContentPane((new HomeScreen(this).getRootPanel()));
+                validate();
+                setCurrStatus(status.RUN_HOME_SCREEN);
+            case RUN_HOME_SCREEN:
                 break;
+            default:
+                logger.info("Done!");
+                System.exit(0);
         }
     }
 
@@ -89,11 +102,17 @@ public class GuiDelegator extends JFrame{
     }
 
     private void initFrame() {
-        setSize(screen_x, screen_y);
-        setTitle("Divergence");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setVisible(true);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                setSize(screen_x, screen_y);
+                setTitle("Divergence");
+                setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                setLocationRelativeTo(null);
+                setVisible(true);
+            }
+        });
+
     }
 
     private void initLog() {
@@ -110,9 +129,24 @@ public class GuiDelegator extends JFrame{
         }
     }
 
+    public void passSplash() {splashLoaded = true;}
+    public void switchMenu(HomeScreen.switchBoard newMenu) {
+        switch (newMenu) {
+
+            case SETTINGS:
+                setCurrStatus(status.SETTINGS);
+            case GAME:
+                setCurrStatus(status.LOADING_GAME);
+            case GRAVEYARD:
+                setCurrStatus(status.GRAVEYARD);
+            case UPDATE:
+                setCurrStatus(status.UPDATING);
+        }
+    }
+
     private void initPanels() {
         if (initWSplash) {
-            splashScreen = new LoadScreen();
+            splashScreen = new LoadScreen(this);
         }
     }
 }

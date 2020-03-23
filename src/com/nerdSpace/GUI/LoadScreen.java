@@ -3,7 +3,6 @@ package com.nerdSpace.GUI;
 import javax.swing.*;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LoadScreen {
     private JProgressBar progressBar;
@@ -12,10 +11,13 @@ public class LoadScreen {
     private JLabel subtitleLabel;
 
     private java.util.Timer loadTimer = new Timer();
-    public AtomicBoolean loadComplete = new AtomicBoolean(false);
-    int loadTime = 10;
+    int loadTime = 2;
     int currTime = 0;
+    GuiDelegator callback;
 
+    LoadScreen(GuiDelegator callback) {
+        this.callback = callback;
+    }
 
     public void init() {
         startPBar();
@@ -49,8 +51,8 @@ public class LoadScreen {
             }
         }, 0, 1000);
         loadTimer.schedule(new TimerTask() {
-            public synchronized void run() {
-                loadComplete.set(true);
+            public void run() {
+                callback.passSplash();
                 loadTimer.cancel();
             }
         }, 1000 * (loadTime-1));
